@@ -4,17 +4,15 @@
 [
     {
         "label": "run app-service",
-        "command": "cd app-service && cargo watch -q -c -w src/ -w assets/ -w templates/ -x run",
+        "command": "cd app-service && cargo run",
         "reveal": "always",
         "reveal_target": "dock",
-        "save": "none"
     },
     {
         "label": "run auth-service",
-        "command": "cd auth-service && cargo watch -q -c -w src/ -w assets/ -x run",
+        "command": "cd auth-service && cargo run",
         "reveal": "always",
         "reveal_target": "dock",
-        "save": "none"
     },
     // {
     //     "label": "Example task",
