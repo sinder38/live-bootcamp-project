@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use axum::{http::StatusCode, response::IntoResponse, routing::get, serve::Serve, Router};
+use axum::{http::StatusCode, response::IntoResponse, routing::post, serve::Serve, Router};
 use tokio::net::TcpListener;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -18,11 +18,11 @@ impl Application {
             ServeDir::new("assets").not_found_service(ServeFile::new("assets/index.html"));
 
         let router = Router::new()
-            .route("/signup", get(signup))
-            .route("/login", get(login))
-            .route("/logout", get(logout))
-            .route("/verify-2fa", get(verify_2fa))
-            .route("/verify-token", get(verify_token))
+            .route("/signup", post(signup))
+            .route("/login", post(login))
+            .route("/logout", post(logout))
+            .route("/verify-2fa", post(verify_2fa))
+            .route("/verify-token", post(verify_token))
             .fallback_service(asset_dir);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
