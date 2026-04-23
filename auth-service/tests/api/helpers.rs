@@ -1,4 +1,6 @@
 use auth_service::Application;
+use serde;
+use uuid::Uuid;
 
 macro_rules! helper {
     ($name:ident, $path:expr) => {
@@ -47,11 +49,23 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    helper!(get_signup, "/signup");
+    pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(&format!("{}/signup", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
     helper!(get_login, "/login");
     helper!(get_logout, "/logout");
     helper!(get_verify_2fa, "/verify-2fa");
     helper!(get_verify_token, "/verify-token");
+}
 
-    // TODO: Implement helper functions for all other routes (signup, login, logout, verify-2fa, and verify-token)
+pub fn get_random_email() -> String {
+    format!("{}@example.com", Uuid::new_v4())
 }
