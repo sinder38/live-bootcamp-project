@@ -1,14 +1,15 @@
 use std::error::Error;
 
-use axum::{http::StatusCode, response::IntoResponse, routing::post, serve::Serve, Router};
+use axum::{routing::post, serve::Serve, Router};
 use tokio::net::TcpListener;
 use tower_http::services::{ServeDir, ServeFile};
 
-// This struct encapsulates our application-related logic.
+pub mod routes;
+
+use routes::*;
+
 pub struct Application {
     server: Serve<TcpListener, Router, Router>,
-    // address is exposed as a public field
-    // so we have access to it in tests.
     pub address: String,
 }
 
@@ -29,7 +30,6 @@ impl Application {
         let address = listener.local_addr()?.to_string();
         let server = axum::serve(listener, router);
 
-        // Create a new Application instance and return it
         Ok(Self { server, address })
     }
 
@@ -41,24 +41,4 @@ impl Application {
     pub fn server(&self) -> &Serve<TcpListener, Router, Router> {
         &self.server
     }
-}
-
-async fn signup() -> impl IntoResponse {
-    StatusCode::OK
-}
-
-async fn login() -> impl IntoResponse {
-    StatusCode::OK
-}
-
-async fn logout() -> impl IntoResponse {
-    StatusCode::OK
-}
-
-async fn verify_2fa() -> impl IntoResponse {
-    StatusCode::OK
-}
-
-async fn verify_token() -> impl IntoResponse {
-    StatusCode::OK
 }

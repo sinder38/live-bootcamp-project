@@ -4,7 +4,7 @@ macro_rules! helper {
     ($name:ident, $path:expr) => {
         pub async fn $name(&self) -> reqwest::Response {
             self.http_client
-                .get(&format!("{}{}", &self.address, $path))
+                .post(&format!("{}{}", &self.address, $path))
                 .send()
                 .await
                 .expect("Failed to execute request.")
