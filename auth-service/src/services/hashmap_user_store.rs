@@ -1,43 +1,31 @@
 use std::collections::HashMap;
 
-use crate::domain::User;
-
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
+use crate::domain::{User, UserStore, UserStoreError};
 
 #[derive(Clone, Default)]
 pub struct HashmapUserStore {
     users: HashMap<String, User>,
 }
 
-impl HashmapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        // Return `UserStoreError::UserAlreadyExists` if the user already exists,
-        // otherwise insert the user into the hashmap and return `Ok(())`.
-
+#[async_trait::async_trait]
+impl UserStore for HashmapUserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         if self.users.contains_key(&user.email) {
             return Err(UserStoreError::UserAlreadyExists);
         }
         self.users.insert(user.email.clone(), user);
-
         Ok(())
     }
 
-    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
-        let user = self.users.get(email);
-        match user {
+    async fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+        match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
-        let user = self.get_user(email)?;
+    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+        let user = self.get_user(email).await?;
         if user.password != password {
             return Err(UserStoreError::InvalidCredentials);
         }
@@ -57,54 +45,47 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_add_user() {
+    #[tokio::test]
+    async fn test_add_user() {
         let mut store = HashmapUserStore::default();
         let user = new_test_user();
 
-        // Adding a new user should succeed
-        assert_eq!(store.add_user(user.clone()), Ok(()));
-
-        // Adding the same user again should fail with UserAlreadyExists
-        assert_eq!(store.add_user(user), Err(UserStoreError::UserAlreadyExists));
+        assert_eq!(store.add_user(user.clone()).await, Ok(()));
+        assert_eq!(
+            store.add_user(user).await,
+            Err(UserStoreError::UserAlreadyExists)
+        );
     }
 
-    #[test]
-    fn test_get_user() {
+    #[tokio::test]
+    async fn test_get_user() {
         let mut store = HashmapUserStore::default();
         let user = new_test_user();
 
-        // Getting a non-existent user should fail with UserNotFound
         assert_eq!(
-            store.get_user(&user.email),
+            store.get_user(&user.email).await,
             Err(UserStoreError::UserNotFound)
         );
 
-        store.add_user(user.clone()).unwrap();
+        store.add_user(user.clone()).await.unwrap();
 
-        // Getting an existing user should return the user
-        assert_eq!(store.get_user(&user.email), Ok(user));
+        assert_eq!(store.get_user(&user.email).await, Ok(user));
     }
 
-    #[test]
-    fn test_validate_user() {
+    #[tokio::test]
+    async fn test_validate_user() {
         let mut store = HashmapUserStore::default();
         let user = new_test_user();
 
-        store.add_user(user.clone()).unwrap();
+        store.add_user(user.clone()).await.unwrap();
 
-        // Correct credentials should succeed
-        assert_eq!(store.validate_user(&user.email, &user.password), Ok(()));
-
-        // Wrong password should fail with InvalidCredentials
+        assert_eq!(store.validate_user(&user.email, &user.password).await, Ok(()));
         assert_eq!(
-            store.validate_user(&user.email, "wrongpassword"),
+            store.validate_user(&user.email, "wrongpassword").await,
             Err(UserStoreError::InvalidCredentials)
         );
-
-        // Non-existent user should fail with UserNotFound
         assert_eq!(
-            store.validate_user("nobody@example.com", "password123"),
+            store.validate_user("nobody@example.com", "password123").await,
             Err(UserStoreError::UserNotFound)
         );
     }
