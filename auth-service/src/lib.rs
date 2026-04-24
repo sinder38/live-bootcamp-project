@@ -4,30 +4,15 @@ use axum::{routing::post, serve::Serve, Router};
 use tokio::net::TcpListener;
 use tower_http::services::{ServeDir, ServeFile};
 
+mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
 
 use routes::*;
 
-use std::sync::Arc;
-use tokio::sync::RwLock;
+pub use crate::app_state::{AppState, UserStoreType};
 
-use crate::services::hashmap_user_store::HashmapUserStore;
-
-// Using a type alias to improve readability!
-pub type UserStoreType = Arc<RwLock<HashmapUserStore>>;
-
-#[derive(Clone)]
-pub struct AppState {
-    pub user_store: UserStoreType,
-}
-
-impl AppState {
-    pub fn new(user_store: UserStoreType) -> Self {
-        Self { user_store }
-    }
-}
 pub struct Application {
     server: Serve<TcpListener, Router, Router>,
     pub address: String,
