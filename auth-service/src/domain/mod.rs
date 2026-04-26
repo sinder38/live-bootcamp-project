@@ -1,4 +1,5 @@
 mod data_stores;
+mod email;
 mod error;
 mod user;
 pub use data_stores::*;
