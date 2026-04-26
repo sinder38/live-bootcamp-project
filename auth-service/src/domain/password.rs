@@ -1,6 +1,6 @@
 const MIN_PASSWORD_LENGTH: usize = 8;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Password(String);
 
 impl Password {

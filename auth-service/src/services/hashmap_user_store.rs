@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::domain::{User, UserStore, UserStoreError};
+use crate::domain::{Email, Password, User, UserStore, UserStoreError};
 
 #[derive(Clone, Default)]
 pub struct HashmapUserStore {
-    users: HashMap<String, User>,
+    users: HashMap<Email, User>,
 }
 
 #[async_trait::async_trait]
@@ -17,16 +17,20 @@ impl UserStore for HashmapUserStore {
         Ok(())
     }
 
-    async fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(
+        &self,
+        email: &Email,
+        password: &Password,
+    ) -> Result<(), UserStoreError> {
         let user = self.get_user(email).await?;
-        if user.password != password {
+        if user.password != *password {
             return Err(UserStoreError::InvalidCredentials);
         }
         Ok(())
@@ -35,12 +39,16 @@ impl UserStore for HashmapUserStore {
 
 #[cfg(test)]
 mod tests {
+    use std::any::Any;
+
+    use fake::faker::lorem::raw::Word;
+
     use super::*;
 
     fn new_test_user() -> User {
         User {
-            email: "test@example.com".to_string(),
-            password: "password123".to_string(),
+            email: Email::parse("test@example.com".to_string()).unwrap(),
+            password: Password::parse("password123".to_string()).unwrap(),
             requires_2fa: false,
         }
     }
@@ -79,13 +87,18 @@ mod tests {
 
         store.add_user(user.clone()).await.unwrap();
 
-        assert_eq!(store.validate_user(&user.email, &user.password).await, Ok(()));
         assert_eq!(
-            store.validate_user(&user.email, "wrongpassword").await,
+            store.validate_user(&user.email, &user.password).await,
+            Ok(())
+        );
+        let wrong_password = Password::parse("wrongpassword".to_string()).unwrap();
+        assert_eq!(
+            store.validate_user(&user.email, &wrong_password).await,
             Err(UserStoreError::InvalidCredentials)
         );
+        let wrong_email = Email::parse("nobody@example.com".to_string()).unwrap();
         assert_eq!(
-            store.validate_user("nobody@example.com", "password123").await,
+            store.validate_user(&wrong_email, &user.password).await,
             Err(UserStoreError::UserNotFound)
         );
     }

@@ -1,8 +1,8 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Email(String);
 
 impl Email {
-    fn parse(email: String) -> Result<Self, String> {
+    pub fn parse(email: String) -> Result<Self, String> {
         if validate_email(&email) {
             Ok(Email(email))
         } else {
