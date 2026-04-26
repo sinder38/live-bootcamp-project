@@ -1,9 +1,9 @@
 pub struct Email(String);
 
 impl Email {
-    fn parse(email: &str) -> Result<Self, String> {
-        if validate_email(email) {
-            Ok(Email(email.to_string()))
+    fn parse(email: String) -> Result<Self, String> {
+        if validate_email(&email) {
+            Ok(Email(email))
         } else {
             Err("Invalid email".to_string())
         }
@@ -59,42 +59,42 @@ mod tests {
 
     #[test]
     fn valid_email_is_parsed_successfully() {
-        assert!(Email::parse("user@example.com").is_ok());
+        assert!(Email::parse("user@example.com".to_string()).is_ok());
     }
 
     #[test]
     fn email_without_at_sign_is_rejected() {
-        assert!(Email::parse("invalidemail.com").is_err());
+        assert!(Email::parse("invalidemail.com".to_string()).is_err());
     }
 
     #[test]
     fn empty_string_is_rejected() {
-        assert!(Email::parse("").is_err());
+        assert!(Email::parse("".to_string()).is_err());
     }
 
     #[test]
     fn parsed_email_preserves_original_value() {
-        let email = "user@example.com";
-        let parsed = Email::parse(email).unwrap();
+        let email = "user@example.com".to_string();
+        let parsed = Email::parse(email.clone()).unwrap();
         assert_eq!(parsed.as_ref(), email);
     }
 
     /// Property: any valid email should be accepted
     #[quickcheck]
     fn prop_valid_emails_are_accepted(email: ValidEmail) -> bool {
-        Email::parse(&email.0).is_ok()
+        Email::parse(email.0).is_ok()
     }
 
     /// Property: any string without '@' must be rejected
     #[quickcheck]
     fn prop_no_at_sign_is_always_rejected(input: NoAtCharacter) -> bool {
-        Email::parse(&input.0).is_err()
+        Email::parse(input.0).is_err()
     }
 
-    /// Property: parsing is idempotent 
+    /// Property: parsing is idempotent
     #[quickcheck]
     fn prop_parsed_email_preserves_value(email: ValidEmail) -> bool {
-        match Email::parse(&email.0) {
+        match Email::parse(email.0.clone()) {
             Ok(parsed) => parsed.as_ref() == email.0,
             Err(_) => false,
         }
