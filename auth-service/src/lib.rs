@@ -10,12 +10,13 @@ use axum::{
 use domain::AuthAPIError;
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeDir;
 
 mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
 
 use routes::*;
 
