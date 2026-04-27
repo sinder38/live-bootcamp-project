@@ -66,7 +66,17 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
-    helper!(get_login, "/login");
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(&format!("{}/login", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
     helper!(get_logout, "/logout");
     helper!(get_verify_2fa, "/verify-2fa");
     helper!(get_verify_token, "/verify-token");
