@@ -32,4 +32,10 @@ docker compose build
 docker compose up
 ```
 
+#### Copy Environment
+```bash
+cd auth-service
+cp .env.example .env
+```
+
 visit http://localhost:8000 and http://localhost:3000

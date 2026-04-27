@@ -30,17 +30,17 @@ jobs:
             - name: Install Rust
               run: rustup update stable && rustup default stable
 
-            # JWT is just a placeholder for the actual secret
             - name: Build and test app-service code
               working-directory: ./app-service
               run: |
-                  export JWT_SECRET=secret
                   cargo build --verbose
                   cargo test --verbose
 
+            # JWT is just a placeholder for the actual secret
             - name: Build and test auth-service code
               working-directory: ./auth-service
               run: |
+                  export JWT_SECRET=secret
                   cargo build --verbose
                   cargo test --verbose
               # Set up Docker Buildx for multi-platform builds
