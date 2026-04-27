@@ -11,7 +11,6 @@ jobs:
     build:
         runs-on: ubuntu-latest
         environment: DigitalOcean
-
         steps:
             # Checkout code from the repository
             - name: Checkout code
@@ -31,9 +30,11 @@ jobs:
             - name: Install Rust
               run: rustup update stable && rustup default stable
 
+            # JWT is just a placeholder for the actual secret
             - name: Build and test app-service code
               working-directory: ./app-service
               run: |
+                  export JWT_SECRET=secret
                   cargo build --verbose
                   cargo test --verbose
 
@@ -95,6 +96,7 @@ jobs:
                   script: |
                       cd ~
                       export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+                      export JWT_SECRET=${{ secrets.JWT_SECRET }}
                       docker compose down
                       docker compose pull
                       docker compose up -d
