@@ -27,7 +27,7 @@ macro_rules! signup_and_login {
         {
 
         let app = TestApp::new().await;
-        let random_email = get_random_email();
+        let random_email = $crate::helpers::get_random_email();
 
         let signup_body = serde_json::json!({
             "email": random_email,
