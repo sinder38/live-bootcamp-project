@@ -68,4 +68,37 @@ async fn should_return_401_if_invalid_token() {
     }
 }
 
-//...
+#[tokio::test]
+async fn should_return_401_if_banned_token() {
+    let (app, response) = signup_and_login!();
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
+
+    let token = auth_cookie.value();
+
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let verify_token_body = serde_json::json!({
+        "token": token,
+    });
+
+    let response = app.post_verify_token(&verify_token_body).await;
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialize response body to ErrorResponse")
+            .error,
+        "Invalid auth token".to_owned()
+    );
+}

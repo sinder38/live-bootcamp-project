@@ -2,7 +2,7 @@ use crate::{
     helpers::{get_random_email, TestApp},
     signup_and_login,
 };
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::{domain::BannedTokenStore, utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::{StatusCode, Url};
 
 #[tokio::test]
@@ -75,6 +75,9 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let response = app.post_logout().await;
 
+    // Save login token
+    let token = auth_cookie.value();
+
     assert_eq!(response.status(), StatusCode::OK);
 
     let auth_cookie = response
@@ -83,6 +86,13 @@ async fn should_return_200_if_valid_jwt_cookie() {
         .expect("No auth cookie");
 
     assert!(auth_cookie.value().is_empty());
+    let banned_token_store = app.banned_token_store.read().await;
+    let contains_token = banned_token_store
+        .contains_token(token)
+        .await
+        .expect("Failed to check if token is banned");
+
+    assert!(contains_token);
 }
 
 #[tokio::test]

@@ -2,7 +2,11 @@ use reqwest::cookie::Jar;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use auth_service::{services::hashmap_user_store::HashmapUserStore, AppState, Application};
+use auth_service::{
+    domain::BannedTokenStore,
+    services::{banned_user_store::HashsetBannedTokenStore, hashmap_user_store::HashmapUserStore},
+    AppState, Application,
+};
 use serde;
 use uuid::Uuid;
 
@@ -21,13 +25,15 @@ macro_rules! helper {
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
+    pub banned_token_store: Arc<RwLock<HashsetBannedTokenStore>>,
     pub http_client: reqwest::Client,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
-        let app_state = AppState { user_store };
+        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let app_state = AppState::new(user_store, banned_token_store.clone());
 
         let app = Application::build(app_state, auth_service::utils::constants::test::APP_ADDRESS)
             .await
@@ -47,10 +53,11 @@ impl TestApp {
             .unwrap();
 
         // Create new `TestApp` instance and return it
-        TestApp {
+        Self {
             address,
             http_client,
             cookie_jar,
+            banned_token_store,
         }
     }
 
