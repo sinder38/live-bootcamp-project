@@ -1,32 +1,12 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::{
+    helpers::{get_random_email, TestApp},
+    signup,
+};
 use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
-
-/// Sets up a test application with a random email and password, and signs up the user.
-macro_rules! setup  {
-    () => {
-        {
-            let app = TestApp::new().await;
-
-            let random_email = get_random_email();
-
-            let signup_body = serde_json::json!({
-                "email": random_email,
-                "password": "password123",
-                "requires2FA": false
-            });
-
-            let response = app.post_signup(&signup_body).await;
-
-            assert_eq!(response.status().as_u16(), 201);
-
-            app
-        }
-    };
-}
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = setup!();
+    let app = signup!();
 
     let random_email = get_random_email();
 
@@ -55,7 +35,7 @@ async fn should_return_422_if_malformed_credentials() {
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = setup!();
+    let app = signup!();
 
     let test_cases = [
         serde_json::json!({
@@ -84,7 +64,7 @@ async fn should_return_400_if_invalid_input() {
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = setup!();
+    let app = signup!();
 
     let test_cases = [serde_json::json!({
         "email": get_random_email(),

@@ -1,8 +1,123 @@
-use crate::helpers::TestApp;
+use crate::{
+    helpers::{get_random_email, TestApp},
+    signup_and_login,
+};
+use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use reqwest::{StatusCode, Url};
 
 #[tokio::test]
-async fn logout_returns_200() {
+async fn should_return_400_if_jwt_cookie_missing() {
     let app = TestApp::new().await;
-    let response = app.get_logout().await;
-    assert_eq!(response.status().as_u16(), 200);
+
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME);
+
+    assert!(auth_cookie.is_none());
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Deserializetion error")
+            .error,
+        "Missing token".to_owned()
+    );
+}
+
+#[tokio::test]
+async fn should_return_401_if_invalid_token() {
+    let app = TestApp::new().await;
+
+    // add invalid cookie
+    app.cookie_jar.add_cookie_str(
+        &format!(
+            "{}=invalid; HttpOnly; SameSite=Lax; Path=/",
+            JWT_COOKIE_NAME
+        ),
+        &Url::parse(&app.address).expect("Failed to parse URL"),
+    );
+
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME);
+
+    assert!(auth_cookie.is_none());
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Deserializetion error")
+            .error,
+        "Invalid auth token".to_owned()
+    );
+}
+
+#[tokio::test]
+async fn should_return_200_if_valid_jwt_cookie() {
+    let (app, response) = signup_and_login!();
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie");
+
+    assert!(!auth_cookie.value().is_empty());
+
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie");
+
+    assert!(auth_cookie.value().is_empty());
+}
+
+#[tokio::test]
+async fn should_return_400_if_logout_called_twice_in_a_row() {
+    let (app, response) = signup_and_login!();
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie");
+
+    assert!(!auth_cookie.value().is_empty());
+
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie");
+
+    assert!(auth_cookie.value().is_empty());
+
+    // Second logout should return 400
+    let response = app.post_logout().await;
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Deserializetion error")
+            .error,
+        "Missing token".to_string()
+    );
 }

@@ -3,7 +3,10 @@ use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::{domain::Email, utils::constants::JWT_SECRET};
+use crate::{
+    domain::Email,
+    utils::constants::{JWT_SECRET, SECURE},
+};
 
 use super::constants::JWT_COOKIE_NAME;
 
@@ -19,6 +22,7 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
         .path("/") // apply cookie to all URLs on the server
         .http_only(true) // prevent JavaScript from accessing the cookie
         .same_site(SameSite::Lax) // send cookie with "same-site" requests, and with "cross-site" top-level navigations.
+        .secure(SECURE)
         .build();
 
     cookie
