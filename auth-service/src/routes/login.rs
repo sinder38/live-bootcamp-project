@@ -1,4 +1,4 @@
-use crate::domain::{AuthAPIError, Email, Password};
+use crate::domain::{AppResult, AuthAPIError, Email, Password};
 use crate::utils::auth;
 use crate::AppState;
 use axum::extract::State;
@@ -17,7 +17,7 @@ pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
+) -> AppResult<(CookieJar, impl IntoResponse)> {
     // NOTE: Disclosing credential requirements is acceptable
     let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password =
