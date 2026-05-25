@@ -2,7 +2,7 @@ use crate::{
     helpers::{get_random_email, TestApp},
     signup,
 };
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
@@ -115,4 +115,44 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+}
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+    let random_email = get_random_email();
+
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": false
+    });
+
+    let response = app.post_signup(&signup_body).await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let test_cases = [
+        serde_json::json!({
+            "email": get_random_email(),
+            "password": "",
+        }),
+        serde_json::json!({
+            "email": "eeee".to_string(),
+            "password": "password123"
+        }),
+        serde_json::json!({
+            "email": "eeee".to_string(),
+            "password": "eeee"
+        }),
+    ];
+    for test_case in test_cases {
+        let response = app.post_login(&test_case).await;
+        assert_eq!(
+            response.status().as_u16(),
+            400,
+            "Failed for input: {:?}",
+            test_case
+        );
+    }
 }
